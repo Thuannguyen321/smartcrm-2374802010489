@@ -1,0 +1,20 @@
+# Chay PostgreSQL 16 cuc bo: docker compose up -d db
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: smartcrm-db
+    environment:
+      POSTGRES_USER: smartcrm
+      POSTGRES_PASSWORD: smartcrm_dev
+      POSTGRES_DB: smartcrm_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - smartcrm-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smartcrm -d smartcrm_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+volumes:
+  smartcrm-pgdata:

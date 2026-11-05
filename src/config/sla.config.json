@@ -1,0 +1,13 @@
+{
+  "_ghiChu": "QT-04 / NFR6: doi so gio SLA hoac ngay lam viec CHI sua file nay.",
+  "utcOffsetMinutes": 420,
+  "workingDays": [1, 2, 3, 4, 5, 6],
+  "workStart": "08:00",
+  "workEnd": "17:30",
+  "hoursByPriority": {
+    "CAO": 24,
+    "TRUNG_BINH": 72,
+    "THAP": 120
+  },
+  "nearDueHours": 4
+}
