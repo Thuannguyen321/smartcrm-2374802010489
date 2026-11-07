@@ -8,9 +8,16 @@ function assertValid(errors) {
   }
 }
 
-function toPositiveInt(value) {
+/** Cot SERIAL (INT) cua PostgreSQL toi da 2^31 - 1. */
+const MAX_INT4 = 2147483647;
+
+/**
+ * So nguyen duong, KHONG vuot `max` (mac dinh so nguyen an toan cua JS, nho hon gioi han BIGINT).
+ * Truoc day 99999999999999999999 van qua kiem tra -> PostgreSQL bao "out of range" -> 500 (BUG-09).
+ */
+function toPositiveInt(value, max = Number.MAX_SAFE_INTEGER) {
   const n = Number(value);
-  return Number.isInteger(n) && n > 0 ? n : null;
+  return Number.isSafeInteger(n) && n > 0 && n <= max ? n : null;
 }
 
 function isBlank(value) {
@@ -24,4 +31,4 @@ function isIsoDate(value) {
   return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === value;
 }
 
-module.exports = { assertValid, toPositiveInt, isBlank, isIsoDate };
+module.exports = { assertValid, toPositiveInt, isBlank, isIsoDate, MAX_INT4 };

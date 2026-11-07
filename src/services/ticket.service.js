@@ -2,7 +2,7 @@
 // FR4 (tao phieu + log trong 1 transaction), FR5 (QT-05), FR6 (QT-A1, QT-04),
 // FR7 (xet duyet QT-A3), FR8 (danh sach + loc).
 const { AppError, ErrorCodes } = require('../utils/AppError');
-const { assertValid, isBlank, isIsoDate, toPositiveInt } = require('../utils/validate');
+const { assertValid, isBlank, isIsoDate, toPositiveInt, MAX_INT4 } = require('../utils/validate');
 const { normalizePhone } = require('../policies/phone.policy');
 const { kiemTraConBaoHanh, WarrantyResult } = require('../policies/warranty.policy');
 const { computeDueDate, slaState, PRIORITIES } = require('../policies/sla.policy');
@@ -21,7 +21,7 @@ function createTicketService({
     if (!phone) errors.phone = 'SĐT phải gồm 10 chữ số và bắt đầu bằng 0 (QT-02)';
     const serialNo = normalizeSerial(input.serialNo);
     if (!serialNo) errors.serialNo = 'Chưa nhập Serial/IMEI';
-    const categoryId = toPositiveInt(input.categoryId);
+    const categoryId = toPositiveInt(input.categoryId, MAX_INT4); // issue_category.category_id la SERIAL (INT)
     if (!categoryId) errors.categoryId = 'Chưa chọn nhóm sự cố';
     const issueDesc = String(input.issueDesc || '').trim();
     if (issueDesc.length < 5) errors.issueDesc = 'Mô tả lỗi tối thiểu 5 ký tự';
