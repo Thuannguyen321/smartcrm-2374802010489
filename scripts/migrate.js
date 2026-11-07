@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { getPool, closePool } = require('../src/config/database');
+const { moTaLoiCsdl } = require('./db-error');
 
 const DIR = path.join(__dirname, '..', 'database', 'migrations');
 
@@ -43,7 +44,7 @@ async function main() {
 
 main()
   .catch((err) => {
-    console.error(`[migrate] THAT BAI: ${err.message}`);
+    console.error(`[migrate] THAT BAI: ${moTaLoiCsdl(err).message}`);
     process.exitCode = 1;
   })
   .finally(closePool);

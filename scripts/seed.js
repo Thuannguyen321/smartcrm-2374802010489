@@ -3,6 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 const { getPool, closePool } = require('../src/config/database');
+const { moTaLoiCsdl } = require('./db-error');
 
 const DIR = path.join(__dirname, '..', 'database', 'seeds');
 const TABLES = ['service_center', 'employee', 'issue_category', 'product', 'customer', 'device', 'ticket', 'ticket_status_log'];
@@ -22,7 +23,7 @@ async function main() {
 
 main()
   .catch((err) => {
-    console.error(`[seed] THAT BAI: ${err.message}`);
+    console.error(`[seed] THAT BAI: ${moTaLoiCsdl(err).message}`);
     process.exitCode = 1;
   })
   .finally(closePool);
