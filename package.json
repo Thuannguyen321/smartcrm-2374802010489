@@ -14,6 +14,9 @@
     "db:seed": "node scripts/seed.js",
     "db:setup": "node scripts/migrate.js && node scripts/seed.js",
     "test": "jest --verbose",
+    "test:unit": "jest --verbose tests/unit tests/api",
+    "test:system": "jest --verbose tests/system",
+    "tc": "node tests/system/run-tc.js",
     "client:install": "npm --prefix client install",
     "client:dev": "npm --prefix client run dev",
     "client:build": "npm --prefix client run build"
@@ -24,7 +27,8 @@
     "testEnvironment": "node",
     "roots": [
       "<rootDir>/tests"
-    ]
+    ],
+    "globalSetup": "<rootDir>/tests/system/global-setup.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
