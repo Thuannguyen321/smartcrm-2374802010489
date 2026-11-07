@@ -57,6 +57,8 @@ Tài khoản demo (mật khẩu chung `Mekong@2026`):
 
 Chế độ phát triển (sửa giao diện có tự tải lại): mở terminal thứ hai, chạy `npm run client:dev` rồi vào http://localhost:5173 (Vite chuyển tiếp `/api` sang cổng 3000).
 
+Nên đặt `JWT_SECRET` riêng trong `.env` (≥ 32 ký tự, tạo bằng `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`). Nếu giữ giá trị mẫu, server tự sinh khoá tạm và phải đăng nhập lại sau mỗi lần khởi động (BUG-06).
+
 Nếu cài PostgreSQL trực tiếp (không dùng Docker), tạo user và CSDL một lần:
 
 ```sql
@@ -66,15 +68,21 @@ CREATE DATABASE smartcrm_db OWNER smartcrm;
 
 ## 4. Chạy kiểm thử
 
+Cần PostgreSQL đang chạy (bước 3 ở mục 3) và file `.env`:
+
 ```bash
-npm test
+npm test                 # toàn bộ 73 test: unit + API + 12 test case hệ thống
+npm run test:unit        # chỉ unit + API (61 test), không cần CSDL
+npm run tc -- TC-05      # chạy và in chi tiết một test case của Test Report
 ```
 
-46 test thuộc 6 bộ (`tests/unit`, `tests/api`), không cần CSDL thật (dùng repository giả trong bộ nhớ), gồm ba loại: luồng đúng · giá trị biên · dữ liệu sai. Tên mỗi test có tiền tố `[luong dung]`, `[bien]`, `[du lieu sai]`, `[ngoai le]`.
+- `tests/unit`, `tests/api`: 61 test dùng repository giả trong bộ nhớ.
+- `tests/system`: 12 test case TC-01 … TC-12 gọi API thật với PostgreSQL thật, đủ năm loại (luồng đúng · biên · dữ liệu sai · bảo mật/chất lượng dữ liệu · tái lập). Dùng CSDL **riêng** `smartcrm_db_test` (tự tạo), mỗi test case tự `resetDb` + migrate + seed nên không đụng tới dữ liệu ở `smartcrm_db`. Ứng dụng chạy giờ Việt Nam trong test (`TC_TZ` để đổi).
+- Test Plan, Test Report, ảnh chụp: `docs/testing/`, `docs/screenshots/`. CI: `.github/workflows/ci.yml`.
 
 ## 5. Kiến trúc và cấu trúc thư mục
 
-Kiến trúc phân lớp (đã nộp ở BT1, file gốc `docs/architecture.drawio`):
+Kiến trúc phân lớp (đã nộp ở BT1, ảnh `docs/images/d-01-kien-truc.png`):
 
 ```
 Presentation (client/ – React)  →  API (src/routes, src/controllers, src/middlewares)
@@ -102,9 +110,9 @@ smartcrm-2374802010489/
 ├── database/
 │   ├── migrations/            # 001_init_schema.sql (8 bảng theo DDL BT1), 002_employee_auth.sql
 │   └── seeds/                 # Dữ liệu mẫu, ON CONFLICT DO NOTHING
-├── scripts/                   # migrate.js, seed.js
-├── tests/                     # unit/ (policies, services), api/ (supertest), helpers/fakeRepos.js
-├── docs/                      # thay-doi-thiet-ke.md, bug-log.md, ai-disclosure.md, images/
+├── scripts/                   # migrate.js, seed.js, db-error.js (thông báo lỗi kết nối CSDL)
+├── tests/                     # unit/, api/ (repository giả), system/ (TC-01…TC-12 trên CSDL thật)
+├── docs/                      # thay-doi-thiet-ke.md, bug-log.md, testing/, screenshots/, images/
 ├── docker-compose.yml, .env.example, package.json, package-lock.json
 ```
 
@@ -118,7 +126,7 @@ smartcrm-2374802010489/
 - [x] JWT + phân quyền vai trò + phạm vi trung tâm; che SĐT cho nhân viên tiếp nhận (NFR4)
 - [x] Giao diện React: đăng nhập, M1 danh sách + lọc + phân trang, M2 tiếp nhận 4 bước, M3 chi tiết + xét duyệt, màn hình khách hàng (tính năng phụ TD-13)
 - [x] Mọi màn hình bọc `DataState` (đang tải · rỗng · lỗi + nút Thử lại); nhận 401 → xoá token, về trang đăng nhập
-- [x] 46 test PASS bằng `npm test`
+- [x] Buổi 14: 73 test PASS bằng `npm test` (gồm 12 test case hệ thống trên PostgreSQL thật); sửa BUG-04, BUG-06 … BUG-09; CI GitHub Actions
 - [x] Đã thử clone vào thư mục mới và chạy theo mục 3
 - [ ] Redis cache danh mục: chưa làm (TD-09, chưa cần với 6 dòng danh mục)
 - [ ] In phiếu, xuất Excel, giao diện di động: cắt khỏi phạm vi BT2 (TD-12)
@@ -142,7 +150,9 @@ Lỗi luôn trả JSON `{ "error": "<MA_LOI>", "message": "...", "details": { "<
 
 ## 8. Tài liệu
 
-- `docs/thay-doi-thiet-ke.md` – nhật ký thay đổi thiết kế (TD-01 … TD-13)
-- `docs/bug-log.md` – các lỗi đã gỡ trong Giai đoạn 2
+- `docs/thay-doi-thiet-ke.md` – nhật ký thay đổi thiết kế (TD-01 … TD-17)
+- `docs/bug-log.md` – nhật ký lỗi BUG-01 … BUG-09, mỗi bug kèm link commit sửa
+- `docs/testing/test-plan.md`, `docs/testing/test-report.md` – Test Plan và Test Report buổi 14
+- `docs/screenshots/` – ảnh chụp kết quả chạy từng test case (`TC-xx.png`, lần 1 trong `lan-1/`) và xác nhận sửa bug (`BUG-xx-fixed.png`)
 - `docs/ai-disclosure.md` – khai báo sử dụng công cụ AI
 - `docs/images/` – ảnh chụp kết quả chạy thật

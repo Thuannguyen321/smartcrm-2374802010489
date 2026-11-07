@@ -88,3 +88,42 @@ Sinh viên: Nguyễn Hoàng Thuận · MSSV 2374802010489 · Track SE · Luồng
 - Quyết định      : THÊM
 - Lý do           : Dùng lại API CRUD `/customers` đã có; giúp nhân viên sửa SĐT/họ tên nhập sai mà không cần vào CSDL.
 - Ảnh hưởng       : Thêm `client/src/pages/CustomersPage.jsx`; không đổi backend.
+
+## Sau phản hồi Bài tập 2 (buổi 14)
+
+Phản hồi riêng của giảng viên cho BT2 (06/11/2026): repo chỉ có 3 tệp PDF và một thư mục submodule rỗng, không lấy được mã nguồn nên C1, C2, C4, C5 chưa đạt; thiếu tag `v0.2`. Ngoài ra đối chiếu sáu lỗi phổ biến giảng viên nêu ở buổi 14 (bảng cuối mục này).
+
+### TD-14 Đẩy mã nguồn trực tiếp vào repo, bỏ submodule rỗng, tạo tag v0.2
+- Phản hồi của GV : Repo chỉ có 3 PDF + thư mục submodule rỗng (không có `.gitmodules`); thiếu tag v0.2.
+- Quyết định      : SỬA (đã làm ở commit `e81a922`, ghi thành BUG-05)
+- Lý do           : Giảng viên chấm bằng `git clone --branch v0.2`; mã nguồn phải nằm trực tiếp trong repo.
+- Ảnh hưởng       : Mã nguồn ở gốc repo, README chạy được ngay sau `cd`; tag `v0.2` trỏ tới `e81a922`. Không đổi chức năng.
+
+### TD-15 Thêm tầng test hệ thống chạy trên PostgreSQL thật
+- Phản hồi của GV : (Buổi 14) "Test quá ít, chỉ test luồng đúng" là lỗi phổ biến; BT3 yêu cầu 10–12 test case chạy thật, đủ năm loại.
+- Quyết định      : SỬA – thêm `tests/system/` (12 test case TC-01…TC-12) gọi API thật với CSDL thật; giữ nguyên 61 test unit/API cũ.
+- Lý do           : Test cũ dùng repository giả nên không bắt được lỗi nằm ở ranh giới ứng dụng ↔ CSDL (kiểu dữ liệu DATE, múi giờ, giới hạn BIGINT) – đúng ba trong năm bug của đợt này.
+- Ảnh hưởng       : `npm test` nay cần PostgreSQL đang chạy (`docker compose up -d db`); dùng CSDL riêng `<tên>_test` nên không xoá dữ liệu dev. `npm run test:unit` vẫn chạy không cần CSDL. Thêm `npm run tc -- TC-xx` để chạy lại một test case khi giảng viên chọn.
+
+### TD-16 Múi giờ: giữ cột TIMESTAMP, đặt múi giờ phiên CSDL theo ứng dụng
+- Phản hồi của GV : (Tự phát hiện qua TC-11 – BUG-08)
+- Quyết định      : SỬA tạm ở tầng kết nối; CHƯA đổi kiểu cột
+- Lý do           : Đổi 4 cột sang `TIMESTAMPTZ` cần migration chuyển đổi dữ liệu và sửa ERD/DDL đã nộp ở BT1; trước hạn BT3 chọn cách ít rủi ro là đặt `TimeZone` của phiên = múi giờ tiến trình Node (một chỗ trong `src/config/database.js`).
+- Ảnh hưởng       : Dữ liệu tạo trước bản sửa trong CSDL dev cần dựng lại (`docker compose down -v` → `npm run db:setup`). Đổi sang `TIMESTAMPTZ` ghi vào việc còn lại sau BT3.
+
+### TD-17 Không dùng JWT_SECRET mẫu, sinh khoá tạm khi chưa cấu hình
+- Phản hồi của GV : (Buổi 14) "Có secret trong lịch sử commit" là lỗi Critical phổ biến; repo BT3 phải PUBLIC.
+- Quyết định      : SỬA (BUG-06)
+- Lý do           : `.env.example` công khai nên giá trị mẫu của nó tương đương không có khoá. Chọn sinh khoá ngẫu nhiên tạm thời thay vì dừng server để README mục 3 vẫn chạy được nguyên văn (phép thử thư mục trống).
+- Ảnh hưởng       : Chưa đặt khoá riêng thì phải đăng nhập lại sau mỗi lần khởi động server. Production bắt buộc đặt `JWT_SECRET` ≥ 32 ký tự.
+
+### Đối chiếu sáu lỗi phổ biến của lớp (buổi 14)
+
+| Lỗi phổ biến | Tình trạng repo này | Quyết định |
+|---|---|---|
+| Clone theo README không chạy được | Đã gặp: repo BT2 không có mã (BUG-05); `db:setup` báo lỗi rỗng trên Windows (BUG-04) | SỬA – TD-14, BUG-04 |
+| Chưa commit tệp khoá phiên bản | `package-lock.json` và `client/package-lock.json` đã có trong repo; README dùng `npm ci` | GIỮ NGUYÊN |
+| Test quá ít, chỉ luồng đúng | 46 test cũ chưa có tầng hệ thống, chưa có bảo mật/tái lập | SỬA – TD-15 (73 test, đủ 5 loại) |
+| Service chứa req/res hoặc SQL | Đã kiểm: `src/services` không có `req`, `res`, `query(` (ảnh `docs/images/t-09-kiem-tra-tach-lop.png`) | GIỮ NGUYÊN |
+| Có secret trong lịch sử commit | Lịch sử chỉ có `.env.example`, không có `.env` (`git log --all -- .env` rỗng). Nhưng khoá mẫu được server chấp nhận | SỬA – TD-17, BUG-06 |
+| Nhận xét sinh viên không đồng ý | Không có | – |
