@@ -31,4 +31,17 @@ describe('kiemTraConBaoHanh — QT-05', () => {
     expect(addMonths('2026-01-31', 1)).toBe('2026-02-28');
     expect(addMonths('2024-01-31', 1)).toBe('2024-02-29');
   });
+
+  // BUG-07: pg tra cot DATE ve Date 00:00 gio dia phuong; o gio VN (+07) toISOString() lui 1 ngay.
+  test('[bien] ngay mua kieu Date (tu CSDL), tiep nhan dung ngay het han -> van con bao hanh', () => {
+    const ngayMua = new Date(2025, 10, 7); // 07/11/2025 00:00 gio dia phuong
+    const r = kiemTraConBaoHanh({ ngayMua, soThangBaoHanh: 12 }, new Date(2026, 10, 7, 9, 0));
+    expect(r.ngayHetHan).toBe('2026-11-07');
+    expect(r.lyDo).toBe('CON_BAO_HANH');
+  });
+
+  test('[bien] tiep nhan luc 06:00 sang gio VN van tinh dung ngay dia phuong', () => {
+    const r = kiemTraConBaoHanh({ ngayMua: '2025-11-07', soThangBaoHanh: 12 }, new Date(2026, 10, 8, 6, 0));
+    expect(r.lyDo).toBe('HET_BAO_HANH'); // 08/11 da qua ngay het han 07/11
+  });
 });

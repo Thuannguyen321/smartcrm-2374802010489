@@ -12,8 +12,17 @@ const WarrantyResult = Object.freeze({
   CHUA_XAC_MINH_BAO_HANH: 'CHUA_XAC_MINH_BAO_HANH',
 });
 
+/**
+ * Lay NGAY THEO LICH DIA PHUONG (YYYY-MM-DD).
+ * pg tra cot DATE ve Date luc 00:00 gio dia phuong; toISOString() doi sang UTC nen o
+ * mui gio +07 bi lui 1 ngay (BUG-07). Vi vay doc ngay/thang/nam theo gio dia phuong.
+ */
 function toDateOnly(value) {
-  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  if (value instanceof Date) {
+    const m = String(value.getMonth() + 1).padStart(2, '0');
+    const d = String(value.getDate()).padStart(2, '0');
+    return `${value.getFullYear()}-${m}-${d}`;
+  }
   return String(value).slice(0, 10);
 }
 
