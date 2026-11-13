@@ -11,6 +11,16 @@ const STATUS_BY_CODE = {
   [ErrorCodes.SAI_TRANG_THAI]: 409,
 };
 
+/**
+ * Ma loi nghia la "khong noi chuyen duoc voi CSDL" -> 503, khong phai 500 (BUG-11).
+ * Trong Docker, CSDL dung thi ten dich vu "db" khong phan giai duoc -> ENOTFOUND / EAI_AGAIN,
+ * khac voi ECONNREFUSED khi chay CSDL tren localhost.
+ */
+const DB_UNAVAILABLE = new Set([
+  'ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN', 'ETIMEDOUT', 'ECONNRESET', 'EHOSTUNREACH',
+  '57P01', '57P03', '3D000', '08000', '08001', '08003', '08006',
+]);
+
 function notFound(req, _res, next) {
   next(new AppError(ErrorCodes.KHONG_TIM_THAY, `Không có đường dẫn ${req.method} ${req.path}`));
 }
@@ -27,12 +37,12 @@ function errorHandler(err, req, res, _next) {
     // Vi pham UNIQUE do 2 request dong thoi vuot qua buoc kiem tra o service.
     return res.status(409).json({ error: ErrorCodes.XUNG_DOT, message: 'Dữ liệu đã tồn tại' });
   }
-  if (err.code === 'ECONNREFUSED' || err.code === '57P01' || err.code === '3D000') {
-    console.error(`[error] ${req.method} ${req.originalUrl} - CSDL khong san sang: ${err.message}`);
+  if (DB_UNAVAILABLE.has(err.code) || /Connection terminated|timeout exceeded when trying to connect/i.test(err.message || '')) {
+    console.error(`[error] ${req.method} ${req.path} - CSDL khong san sang (${err.code || 'ket noi'})`);
     return res.status(503).json({ error: 'CSDL_KHONG_SAN_SANG', message: 'Hệ thống tạm thời không kết nối được CSDL, vui lòng thử lại' });
   }
-  console.error(`[error] ${req.method} ${req.originalUrl}`, err);
+  console.error(`[error] ${req.method} ${req.path}`, err);
   return res.status(500).json({ error: 'LOI_HE_THONG', message: 'Lỗi hệ thống, vui lòng thử lại sau' });
 }
 
-module.exports = { errorHandler, notFound, STATUS_BY_CODE };
+module.exports = { errorHandler, notFound, STATUS_BY_CODE, DB_UNAVAILABLE };
