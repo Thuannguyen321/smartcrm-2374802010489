@@ -24,8 +24,18 @@ function sessionTimeZone(date = new Date()) {
 function getPool() {
   if (!pool) {
     pool = new Pool({ connectionString: env.databaseUrl(), max: 10, options: `-c TimeZone=${sessionTimeZone()}` });
+    pool.on('error', onIdleClientError);
   }
   return pool;
+}
+
+/**
+ * BUG-10: CSDL khoi dong lai / bi dung -> ket noi DANG RANH trong pool nhan loi 57P01.
+ * pg phat su kien 'error' tren Pool; khong co ai nghe thi Node coi la loi chua bat va DUNG ca tien trinh.
+ * Chi ghi log (ma loi, khong ghi chuoi ket noi); pool tu bo ket noi hong, request sau se ket noi lai.
+ */
+function onIdleClientError(err) {
+  console.error(`[db] Mat ket noi CSDL (${err.code || err.message}) - se ket noi lai o request sau`);
 }
 
 /**
@@ -54,4 +64,4 @@ async function closePool() {
   }
 }
 
-module.exports = { getPool, withTransaction, closePool, sessionTimeZone };
+module.exports = { getPool, withTransaction, closePool, sessionTimeZone, onIdleClientError };
