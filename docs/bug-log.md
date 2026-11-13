@@ -11,6 +11,8 @@ Sinh viên: Nguyễn Hoàng Thuận · MSSV 2374802010489 · Track SE
 | BUG-07 | **Major** | Ngày cuối bảo hành bị kết luận HẾT bảo hành (lùi 1 ngày ở giờ VN) | [`7f73f51`](https://github.com/Thuannguyen321/smartcrm-2374802010489/commit/7f73f51ee4894e3827b66354a7c30d611f8313b7) | Đã sửa |
 | BUG-08 | **Major** | Giờ ghi log lệch 7 tiếng, trạng thái SLA phiếu mẫu sai | [`19716d8`](https://github.com/Thuannguyen321/smartcrm-2374802010489/commit/19716d8f07f2b152125bc153a5a93d5c7332bac9) | Đã sửa |
 | BUG-09 | Minor | Mã phiếu vượt phạm vi BIGINT trả 500 thay vì 400 | [`283cd2b`](https://github.com/Thuannguyen321/smartcrm-2374802010489/commit/283cd2bbd3e57fdfa588426c4b052ea9f6bd2edb) | Đã sửa |
+| BUG-10 | **Major** | App dừng hẳn khi CSDL khởi động lại (thiếu bộ nghe lỗi của pool) – tìm thấy khi đóng gói BT3 | [`f2ead25`](https://github.com/Thuannguyen321/smartcrm-2374802010489/commit/f2ead25ad9dd63f4efbedba66d0a96d970f0b9df) | Đã sửa |
+| BUG-11 | Minor | CSDL mất kết nối trong Docker trả 500 thay vì 503, log ghi cả query string | [`d9723b3`](https://github.com/Thuannguyen321/smartcrm-2374802010489/commit/d9723b3cbbb06d749ea3088061d97a486e76f875) | Đã sửa |
 
 **Cách phân loại mức độ** (ba câu hỏi): (1) người dùng còn làm được việc không; (2) dữ liệu có bị sai hoặc lộ không; (3) có cách làm tạm không.
 Critical = lộ dữ liệu hoặc leo quyền, không cần điều kiện đặc biệt · Major = dữ liệu/quyết định nghiệp vụ sai hoặc người khác không dựng được hệ thống · Minor = sai thông báo/mã lỗi, dữ liệu không hỏng, có cách làm tạm.
@@ -104,3 +106,24 @@ Mẫu bảy dòng buổi 13: mã và mức độ · phát hiện bởi · triệ
 6. **Cách sửa:** Chỉ nhận số nguyên an toàn của JS (`Number.isSafeInteger`), thêm tham số `max`; `categoryId` giới hạn 2147483647. Thêm `tests/unit/validate.test.js` (4 test).
 7. **Commit và xác nhận:** [`283cd2b`](https://github.com/Thuannguyen321/smartcrm-2374802010489/commit/283cd2bbd3e57fdfa588426c4b052ea9f6bd2edb) · TC-08 → `/999999` 404, `/99999999999999999999` **400 DU_LIEU_KHONG_HOP_LE** – [ảnh BUG-09-fixed.png](screenshots/BUG-09-fixed.png).
 
+## Phần 3 – Giai đoạn 3 (buổi 16, đóng gói và phép thử máy trắng)
+
+Hai bug dưới đây lộ ra khi chạy hệ thống trong Docker Compose theo đúng Deployment Guide rồi điền checklist bảo mật mục 5 ("tắt db rồi gọi API"). Cả hai không thấy được khi chạy Node trực tiếp trên máy với CSDL luôn bật.
+
+### BUG-10 · Major · App dừng hẳn khi CSDL khởi động lại
+1. **Mã và mức độ:** BUG-10 · Major – mọi người dùng mất hệ thống (không vào được cả giao diện) mỗi khi CSDL khởi động lại/bảo trì; không mất dữ liệu nhưng không có cách làm tạm ngoài chờ container tự khởi động lại.
+2. **Phát hiện bởi:** Sinh viên, khi điền checklist bảo mật mục 5 trên gói Docker (13/11/2026).
+3. **Triệu chứng:** Sau `docker compose stop db`, `curl /health` không có phản hồi (HTTP 000), `docker compose ps` báo `app Restarting (1)`; log app: `node:events:502 throw er; // Unhandled 'error' event ... terminating connection due to administrator command ... code: '57P01'` – [ảnh BUG-10-truoc.png](screenshots/BUG-10-truoc.png).
+4. **Cách tái lập:** `docker compose up -d --build` → gọi một API bất kỳ có đăng nhập (để pool có kết nối rảnh) → `docker compose stop db` → `docker compose ps`. Tự động: `npx jest tests/unit/database.pool-error.test.js` (FAIL trên mã cũ).
+5. **Nguyên nhân:** Khi CSDL dừng, PostgreSQL đóng các kết nối đang **rảnh** trong pool bằng lỗi 57P01; thư viện `pg` phát sự kiện `'error'` trên `Pool`. `src/config/database.js` không đăng ký `pool.on('error')` nên Node coi là lỗi chưa bắt và dừng cả tiến trình.
+6. **Cách sửa:** Thêm `pool.on('error', onIdleClientError)` – chỉ ghi `[db] Mat ket noi CSDL (<mã lỗi>)`, không ghi chuỗi kết nối; pool tự bỏ kết nối hỏng và kết nối lại ở request sau. Thêm `tests/unit/database.pool-error.test.js` (2 test).
+7. **Commit và xác nhận:** [`f2ead25`](https://github.com/Thuannguyen321/smartcrm-2374802010489/commit/f2ead25ad9dd63f4efbedba66d0a96d970f0b9df) · tắt CSDL: app vẫn `Up (healthy)`, `/health` → 503 `{"status":"degraded","db":"down"}`; bật lại CSDL: `/health` → 200 không cần khởi động lại app – [ảnh BUG-10-fixed.png](screenshots/BUG-10-fixed.png).
+
+### BUG-11 · Minor · CSDL mất kết nối trong Docker trả 500 thay vì 503
+1. **Mã và mức độ:** BUG-11 · Minor – dữ liệu không hỏng; người dùng thấy "Lỗi hệ thống" thay vì "tạm thời không kết nối được CSDL, thử lại", người vận hành không phân biệt được lỗi mã với lỗi hạ tầng; log ghi cả stack và query string (có thể chứa SĐT – checklist mục 6).
+2. **Phát hiện bởi:** Sinh viên, chạy lại checklist mục 5 sau khi sửa BUG-10.
+3. **Triệu chứng:** Tắt CSDL, `GET /api/v1/tickets` → **500** `{"error":"LOI_HE_THONG"}`; log app in toàn bộ stack kèm `code: 'ENOTFOUND', hostname: 'db'` – [ảnh BUG-11-truoc.png](screenshots/BUG-11-truoc.png).
+4. **Cách tái lập:** `docker compose stop db` → gọi API có token. Tự động: `npx jest tests/unit/errorHandler.test.js` (3 FAIL trên mã cũ).
+5. **Nguyên nhân:** `errorHandler` chỉ nhận `ECONNREFUSED`/`57P01`/`3D000` là "CSDL không sẵn sàng" – đúng khi CSDL chạy ở `localhost`. Trong Docker, container `db` dừng thì tên dịch vụ `db` không phân giải được nên lỗi là `ENOTFOUND`/`EAI_AGAIN`, rơi vào nhánh 500. Nhánh 500 ghi `req.originalUrl` (gồm query string).
+6. **Cách sửa:** Gom tập mã lỗi kết nối (`ENOTFOUND`, `EAI_AGAIN`, `ETIMEDOUT`, `ECONNRESET`, `EHOSTUNREACH`, `08xxx`, `57P0x`…) → 503 `CSDL_KHONG_SAN_SANG`; log chỉ ghi phương thức + `req.path` + mã lỗi. Thêm `tests/unit/errorHandler.test.js` (6 test).
+7. **Commit và xác nhận:** [`d9723b3`](https://github.com/Thuannguyen321/smartcrm-2374802010489/commit/d9723b3cbbb06d749ea3088061d97a486e76f875) · tắt CSDL: API → **503** `CSDL_KHONG_SAN_SANG`, log `[error] GET /api/v1/tickets - CSDL khong san sang (ENOTFOUND)` – [ảnh sec-5.png](screenshots/sec-5.png), [ảnh sec-6.png](screenshots/sec-6.png).

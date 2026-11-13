@@ -127,3 +127,30 @@ Phản hồi riêng của giảng viên cho BT2 (06/11/2026): repo chỉ có 3 t
 | Service chứa req/res hoặc SQL | Đã kiểm: `src/services` không có `req`, `res`, `query(` (ảnh `docs/images/t-09-kiem-tra-tach-lop.png`) | GIỮ NGUYÊN |
 | Có secret trong lịch sử commit | Lịch sử chỉ có `.env.example`, không có `.env` (`git log --all -- .env` rỗng). Nhưng khoá mẫu được server chấp nhận | SỬA – TD-17, BUG-06 |
 | Nhận xét sinh viên không đồng ý | Không có | – |
+
+## Giai đoạn 3 – đóng gói (buổi 16, BT3)
+
+So với BT2 (tag `v0.2`): BT2 chạy theo README 7 bước, phải tự cài Node.js 20 và chạy `npm run db:setup`, `npm run client:build` bằng tay (mức tái lập 2). BT3 đóng gói thành mức 3: chỉ cần Docker, hai lệnh `cp .env.example .env` và `docker compose up -d --build`.
+
+### TD-18 Đóng gói app + CSDL bằng Docker Compose (Dockerfile hai giai đoạn)
+- Lý do           : Thành phần 4 của BT3 – người chấm chỉ có Docker và Git; mọi thứ ngầm trên máy sinh viên (Node, CSDL đã có bảng, biến môi trường) phải nằm trong repo.
+- Quyết định      : Một image `smartcrm-l2:1.0`: giai đoạn 1 build giao diện React bằng Vite, giai đoạn 2 chạy API Node 20 (alpine, user `node`) và phục vụ luôn bản build giao diện ở cùng cổng 3000. Cài cả devDependencies để giảng viên chạy `docker compose exec app npm test` trong container.
+- Phương án bỏ    : Tách container giao diện (nginx) riêng – thêm một dịch vụ và cấu hình proxy mà không thêm giá trị cho prototype; image không có devDependencies – nhẹ hơn ~40 MB nhưng không chạy được test trong container.
+- Ảnh hưởng       : Thêm `Dockerfile`, `.dockerignore`, `.gitattributes`; `docker-compose.yml` viết lại (có `app`). README mục 3 còn đúng hai lệnh. CI có thêm job `docker` chạy đúng hai lệnh này ở mỗi lần push.
+
+### TD-19 Khởi tạo CSDL tự động khi app khởi động (thay cho `db/init/*.sql`)
+- Lý do           : Bước khởi tạo phải tự động, không bắt người chấm gõ lệnh thứ ba.
+- Quyết định      : Lệnh khởi động container = `node scripts/migrate.js && node scripts/seed.js && exec node src/server.js`. Giữ nguyên migration có bảng `schema_migrations` và seed `ON CONFLICT DO NOTHING` đã kiểm ở TC-12.
+- Phương án bỏ    : Chép `.sql` vào `/docker-entrypoint-initdb.d` của Postgres – chỉ chạy khi volume còn trống, nên migration mới sau này sẽ không được áp vào CSDL đã có; và phải duy trì hai cách khởi tạo (Docker và `npm run db:setup`).
+- Ảnh hưởng       : Mỗi lần app khởi động lại đều chạy migrate/seed (~1 giây), không nhân đôi dữ liệu (C8 – Deployment Guide mục 5 bước 6).
+
+### TD-20 `GET /health` kiểm cả CSDL; healthcheck cho cả hai dịch vụ
+- Lý do           : `docker compose ps` phải cho người chấm thấy `healthy`; `/api/v1/health` cũ chỉ trả `{"status":"ok"}` kể cả khi CSDL chết.
+- Quyết định      : Thêm `GET /health` (không cần token) chạy `SELECT 1` tối đa 2 giây → 200 `{"status":"ok","db":"up"}` hoặc 503 `{"status":"degraded","db":"down"}`. `app` có `depends_on: db: condition: service_healthy`. Giữ `/api/v1/health` cũ (liveness) để không phá giao diện/tài liệu BT2.
+- Ảnh hưởng       : Thêm `src/health.js`, `tests/api/health.test.js` (3 test). API docs: 23 endpoint.
+
+### TD-21 Cấu hình qua `.env`, CSDL không mở cổng ra máy chủ
+- Lý do           : Buổi 15 – không ghi cứng mật khẩu trong compose; không mở cổng CSDL khi không cần (OWASP A02).
+- Quyết định      : `DB_NAME/DB_USER/DB_PASSWORD/APP_PORT` lấy từ `.env` (compose báo lỗi rõ nếu thiếu); `DATABASE_URL` trong container tự ghép với host `db`. Bỏ `container_name: smartcrm-db` (trùng tên với container cũ trên máy – sự cố buổi 14). Cổng 5432 chỉ mở ra `127.0.0.1` khi dev dùng thêm `docker-compose.dev.yml`. Container app đặt `TZ=Asia/Ho_Chi_Minh` để giờ làm việc SLA và ngày hết bảo hành tính theo giờ Việt Nam.
+- Ảnh hưởng       : Cách chạy dev cũ `docker compose up -d db` + `npm start` đổi thành `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db` (README mục 8 Deployment Guide). Volume đổi tên thành `<thư mục>_dbdata`: dữ liệu dev cũ trong volume `smartcrm-pgdata` không còn dùng.
+

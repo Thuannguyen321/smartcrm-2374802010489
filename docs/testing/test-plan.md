@@ -1,6 +1,6 @@
 # Test Plan rút gọn – Smart CRM, luồng L2
 
-Sinh viên: Nguyễn Hoàng Thuận · MSSV 2374802010489 · Track SE · Buổi 14 (07/11/2026)
+Sinh viên: Nguyễn Hoàng Thuận · MSSV 2374802010489 · Track SE · Buổi 14 (07/11/2026), cập nhật buổi 16 (13/11/2026, BT3)
 Liên quan: [Test Report](test-report.md) · [Bug Log](../bug-log.md) · ảnh chụp trong [`docs/screenshots/`](../screenshots/)
 
 ## 1. Phạm vi
@@ -27,10 +27,10 @@ Liên quan: [Test Report](test-report.md) · [Bug Log](../bug-log.md) · ảnh c
 
 | Tầng | Công cụ | Số test | Chạy bằng |
 |---|---|---|---|
-| Unit (policies, services, utils, scripts) | Jest | 55 | `npm test` hoặc `npm run test:unit` |
-| API (route → controller → service, repository giả) | Jest + supertest | 6 | như trên |
+| Unit (policies, services, utils, scripts, errorHandler, pool CSDL) | Jest | 63 | `npm test` hoặc `npm run test:unit` |
+| API (route → controller → service, repository giả; `/health`) | Jest + supertest | 9 | như trên |
 | **Hệ thống** (API thật + PostgreSQL thật) – 12 test case của Test Report | Jest + supertest + pg | 12 | `npm test`, `npm run test:system`, hoặc `npm run tc -- TC-xx` |
-| **Tổng** | | **73** | **`npm test` (một lệnh)** |
+| **Tổng** | | **84** | **`npm test` (một lệnh); trong gói Docker: `docker compose exec app npm test`** |
 
 12 test case hệ thống chia đủ năm loại BT3 yêu cầu:
 
@@ -51,7 +51,7 @@ Liên quan: [Test Report](test-report.md) · [Bug Log](../bug-log.md) · ảnh c
 ## 3. Tiêu chí thành công (đo được)
 
 1. 100% test case ưu tiên **Cao** PASS ở lần chạy cuối; mọi test case đều có ảnh chụp `docs/screenshots/TC-xx.png`.
-2. `npm test` chạy một lệnh, **0 FAIL** (hiện tại 73/73).
+2. `npm test` chạy một lệnh, **0 FAIL** (buổi 14: 73/73; BT3 trong container: 84/84).
 3. Không còn bug Critical/Major ở trạng thái mở trong Bug Log.
 4. Dữ liệu người dùng nhập sai không bao giờ gây 500: luôn là 400/404/409 kèm JSON `{error, message, details}`.
 5. Mọi thao tác thất bại không để lại bản ghi: đếm bảng `ticket`, `ticket_status_log` trước/sau bằng nhau.
@@ -59,10 +59,11 @@ Liên quan: [Test Report](test-report.md) · [Bug Log](../bug-log.md) · ảnh c
 
 ## 4. Môi trường và dữ liệu thử
 
-- Node.js 20/22, PostgreSQL 16 (`docker compose up -d db`, image `postgres:16-alpine`, múi giờ CSDL mặc định UTC).
+- **BT3 (chính thức):** gói Docker Compose theo Deployment Guide – container `app` (Node 20 alpine, `TZ=Asia/Ho_Chi_Minh`) và `db` (`postgres:16-alpine`, múi giờ UTC); chạy `docker compose exec app npm test`.
+- Buổi 14: Node.js 20/22 trên máy, PostgreSQL 16 bằng Docker, múi giờ CSDL mặc định UTC.
 - Múi giờ tiến trình ứng dụng khi test: `Asia/Ho_Chi_Minh` (đặt trong `tests/system/global-setup.js`, giống máy Windows của sinh viên; đổi bằng biến `TC_TZ`).
 - CSDL test **riêng**: `<tên CSDL trong DATABASE_URL>_test` (vd `smartcrm_db_test`), tự tạo nếu chưa có → không xoá dữ liệu đang dùng.
 - Tiền điều kiện chung của mọi test case: `resetDb` (xoá schema) → `node scripts/migrate.js` → `node scripts/seed.js`.
 - Dữ liệu seed: 3 trung tâm, 3 nhân viên (`letan01`, `quanly01` – Cần Thơ; `letan02` – Vĩnh Long; mật khẩu `Mekong@2026`), 6 khách hàng, 7 thiết bị, 5 phiếu mẫu `BH-000001/2026` … `BH-000005/2026`.
 - Dữ liệu biên tạo trong test case, tính theo ngày chạy: `SN-TC03-BIEN` (mua đúng 12 tháng trước), `SN-TC04-BIEN` (12 tháng + 1 ngày).
-- CI: `.github/workflows/ci.yml` chạy `npm test` với PostgreSQL 16 trên GitHub Actions ở mỗi lần push.
+- CI: `.github/workflows/ci.yml` chạy `npm test` với PostgreSQL 16 (job `test`) và dựng gói Docker bằng đúng hai lệnh của Deployment Guide rồi chạy test trong container (job `docker`) ở mỗi lần push.

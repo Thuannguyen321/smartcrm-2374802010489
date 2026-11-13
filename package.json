@@ -1,6 +1,6 @@
 {
   "name": "smartcrm-2374802010489",
-  "version": "0.2.0",
+  "version": "1.0.0",
   "description": "Smart CRM - Mekong Mobile - Luong L2: Tiep nhan va phan loai yeu cau bao hanh (Track SE)",
   "main": "src/server.js",
   "private": true,

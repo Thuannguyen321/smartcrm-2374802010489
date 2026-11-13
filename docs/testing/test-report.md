@@ -1,22 +1,24 @@
-# Test Report – Smart CRM, luồng L2 (buổi 14)
+# Test Report – Smart CRM, luồng L2 (buổi 14, chạy lại trong gói Docker ở buổi 16)
 
 Sinh viên: Nguyễn Hoàng Thuận · MSSV 2374802010489 · Track SE
 Kế hoạch: [Test Plan](test-plan.md) · Lỗi: [Bug Log](../bug-log.md) · Ảnh: [`docs/screenshots/`](../screenshots/)
 
 ## 1. Tổng hợp
 
-| | Lần 1 – trước khi sửa bug | Lần 2 – sau khi sửa bug |
-|---|---|---|
-| Ngày chạy | 07/11/2026 | 07/11/2026 |
-| Mã nguồn | commit [`61790d4`](https://github.com/Thuannguyen321/smartcrm-2374802010489/commit/61790d4b07c6089a5772acee010b653e4d8336fc) | commit [`c732b48`](https://github.com/Thuannguyen321/smartcrm-2374802010489/commit/c732b48f995299e0ceb6ffea83e964cd029a16d1) (đã có 5 commit sửa bug) |
-| Test case hệ thống đã chạy thật | 12 | 12 |
-| PASS / FAIL | 7 / **5** (TC-03, TC-04, TC-08, TC-10, TC-11) | **12 / 0** |
-| `npm test` (unit + API + hệ thống) | 53 PASS / 5 FAIL – [ảnh](../screenshots/lan-1/npm-test.png) | **73 / 73 PASS** – [ảnh](../screenshots/npm-test-sau-sua-bug.png) |
-| Đủ 5 loại test | Có | Có |
+| | Lần 1 – trước khi sửa bug | Lần 2 – sau khi sửa bug | Lần 3 – BT3, trong container Docker |
+|---|---|---|---|
+| Ngày chạy | 07/11/2026 | 07/11/2026 | 13/11/2026 |
+| Mã nguồn | commit [`61790d4`](https://github.com/Thuannguyen321/smartcrm-2374802010489/commit/61790d4b07c6089a5772acee010b653e4d8336fc) | commit [`c732b48`](https://github.com/Thuannguyen321/smartcrm-2374802010489/commit/c732b48f995299e0ceb6ffea83e964cd029a16d1) (đã có 5 commit sửa bug) | tag `v1.0` (gói Docker, đã sửa thêm BUG-10, BUG-11) |
+| Test case hệ thống đã chạy thật | 12 | 12 | 12 |
+| PASS / FAIL | 7 / **5** (TC-03, TC-04, TC-08, TC-10, TC-11) | **12 / 0** | **12 / 0** |
+| `npm test` (unit + API + hệ thống) | 53 PASS / 5 FAIL – [ảnh](../screenshots/lan-1/npm-test.png) | **73 / 73 PASS** – [ảnh](../screenshots/npm-test-sau-sua-bug.png) | **84 / 84 PASS** (72 unit/API + 12 hệ thống) – [ảnh](../screenshots/bt3-04-npm-test.png) |
+| Đủ 5 loại test | Có | Có | Có |
 
 Năm FAIL ở lần 1 dẫn tới 4 bug mới (BUG-06 … BUG-09); BUG-04 đến từ lần chạy README trên máy Windows của sinh viên (06/11/2026). Chi tiết ở [Bug Log](../bug-log.md).
 
-**Môi trường chạy:** Ubuntu 24.04 · Node.js 22 · PostgreSQL 16.15 (múi giờ CSDL `Etc/UTC`, giống image Docker `postgres:16-alpine`) · tiến trình ứng dụng chạy giờ `Asia/Ho_Chi_Minh` · CSDL test riêng `smartcrm_db_test`.
+**Môi trường lần 3 (BT3):** clone theo tag `v1.0` vào thư mục trống → `cp .env.example .env` → `docker compose up -d --build` → `docker compose exec app npm test`; container `app` Node 20 alpine giờ `Asia/Ho_Chi_Minh`, `db` PostgreSQL 16 UTC. Kết quả từng test case giống hệt lần 2 (cột "Kết quả thực tế"), ngày tính theo hôm chạy.
+
+**Môi trường lần 1–2:** Ubuntu 24.04 · Node.js 22 · PostgreSQL 16.15 (múi giờ CSDL `Etc/UTC`, giống image Docker `postgres:16-alpine`) · tiến trình ứng dụng chạy giờ `Asia/Ho_Chi_Minh` · CSDL test riêng `smartcrm_db_test`.
 
 **Chạy lại một test case:** bật CSDL (`docker compose up -d db`) rồi `npm run tc -- TC-05`. Chạy tất cả: `npm test`. Mỗi test case tự đặt lại CSDL test về đúng tiền điều kiện (`resetDb` + migrate + seed), không phụ thuộc dữ liệu còn sót.
 
