@@ -143,6 +143,6 @@ smartcrm-2374802010489/
 - `docs/thay-doi-thiet-ke.md` – nhật ký thay đổi thiết kế (TD-01 … TD-21)
 - `docs/bug-log.md` – nhật ký lỗi BUG-01 … BUG-11, mỗi bug kèm link commit sửa
 - `docs/testing/test-plan.md`, `docs/testing/test-report.md` – Test Plan và Test Report buổi 14
-- `docs/screenshots/` – ảnh chụp kết quả chạy từng test case (`TC-xx.png`, lần 1 trong `lan-1/`) và xác nhận sửa bug (`BUG-xx-fixed.png`)
+- `docs/screenshots/` – ảnh chụp chạy thật: phép thử máy trắng BT3 (`bt3-01` … `bt3-07`), checklist bảo mật (`sec-1` … `sec-7`), từng test case (`TC-xx.png`, lần 1 trong `lan-1/`), bug (`BUG-xx-truoc.png`, `BUG-xx-fixed.png`)
 - `docs/ai-disclosure.md` – khai báo sử dụng công cụ AI
 - `docs/images/` – ảnh chụp kết quả chạy thật
