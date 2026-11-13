@@ -1,0 +1,16 @@
+# Khong chep vao image: thu vien cua may sinh vien, secret, lich su git, tai lieu/anh
+node_modules
+client/node_modules
+client/dist
+.env
+.env.*
+!.env.example
+client/.env
+.git
+.github
+docs
+*.log
+coverage
+.DS_Store
+*.pdf
+*.docx

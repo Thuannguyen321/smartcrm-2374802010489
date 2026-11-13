@@ -1,0 +1,7 @@
+# CHI dung khi phat trien tren may (nguoi cham KHONG can tep nay):
+# mo cong CSDL ra 127.0.0.1 de chay `npm start` / `npm test` truc tiep bang Node tren may.
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db
+services:
+  db:
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"

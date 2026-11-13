@@ -1,20 +1,47 @@
-# Chay PostgreSQL 16 cuc bo: docker compose up -d db
+# Smart CRM - luong L2 (track SE). Dung he thong bang 2 lenh:
+#   cp .env.example .env
+#   docker compose up -d --build
+# Moi gia tri cau hinh lay tu .env (xem .env.example va docs/deployment-guide.md).
 services:
   db:
     image: postgres:16-alpine
-    container_name: smartcrm-db
     environment:
-      POSTGRES_USER: smartcrm
-      POSTGRES_PASSWORD: smartcrm_dev
-      POSTGRES_DB: smartcrm_db
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: ${DB_NAME:?Thieu DB_NAME - hay chay cp .env.example .env}
+      POSTGRES_USER: ${DB_USER:?Thieu DB_USER - hay chay cp .env.example .env}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Thieu DB_PASSWORD - hay chay cp .env.example .env}
     volumes:
-      - smartcrm-pgdata:/var/lib/postgresql/data
+      - dbdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U smartcrm -d smartcrm_db"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 10
+    restart: unless-stopped
+    # Khong mo cong CSDL ra may chu: chi app goi duoc qua mang noi bo (OWASP A02).
+    # Can mo de chay Node truc tiep tren may: xem docker-compose.dev.yml
+
+  app:
+    build: .
+    image: smartcrm-l2:1.0
+    env_file: .env
+    environment:
+      # Ten dich vu "db", khong phai localhost. Ghi de DATABASE_URL trong .env (dung khi chay ngoai Docker).
+      DATABASE_URL: postgres://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
+      PORT: "3000"
+      # Gio lam viec SLA (QT-04) va ngay het bao hanh (QT-05) tinh theo gio Viet Nam
+      TZ: ${TZ:-Asia/Ho_Chi_Minh}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
 volumes:
-  smartcrm-pgdata:
+  dbdata: {}

@@ -34,3 +34,17 @@ jobs:
       - run: echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
       - run: npm ci
       - run: npm test
+
+  # BT3 - phep thu "may trang" tu dong: dung he thong bang dung 2 lenh cua Deployment Guide,
+  # cho moi dich vu healthy, goi /health va chay npm test TRONG container.
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cp .env.example .env
+      - run: docker compose up -d --build --wait --wait-timeout 180
+      - run: docker compose ps
+      - run: curl -fsS http://localhost:3000/health
+      - run: docker compose exec -T app npm test
+      - if: failure()
+        run: docker compose logs --tail 100

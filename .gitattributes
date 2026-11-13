@@ -1,0 +1,7 @@
+# Luu moi tep van ban voi LF de container Linux doc dung (tranh loi CRLF khi commit tu Windows)
+* text=auto eol=lf
+*.sh  text eol=lf
+*.sql text eol=lf
+*.png binary
+*.jpg binary
+*.pdf binary

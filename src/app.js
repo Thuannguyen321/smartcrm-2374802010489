@@ -9,11 +9,14 @@ const { errorHandler, notFound } = require('./middlewares/errorHandler');
  * Tao ung dung Express tu cac dependency da lap san (xem container.js).
  * Tach rieng khoi server.js de test API bang supertest voi service gia.
  */
-function createApp({ controllers, authService, corsOrigin = '*', serveClient = false }) {
+function createApp({ controllers, authService, corsOrigin = '*', serveClient = false, health }) {
   const app = express();
   app.disable('x-powered-by');
   app.use(cors({ origin: corsOrigin }));
   app.use(express.json({ limit: '100kb' }));
+
+  // /health o goc (khong can token) cho healthcheck Docker va muc "Verify it works" cua Deployment Guide.
+  if (health) app.get('/health', health);
 
   app.use('/api/v1', createRouter({ controllers, authService }));
   app.use('/api', notFound);
