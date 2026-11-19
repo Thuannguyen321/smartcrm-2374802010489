@@ -2,7 +2,7 @@
 # Dung boi docker-compose.yml: `docker compose up -d --build`.
 
 # ---------- Giai doan 1: build giao dien React (Vite) ----------
-FROM node:20-alpine AS client-build
+FROM node:26-alpine AS client-build
 WORKDIR /build/client
 # Tep khoa truoc -> chi cai lai thu vien khi package-lock.json doi (tan dung cache)
 COPY client/package.json client/package-lock.json ./
@@ -11,7 +11,7 @@ COPY client/ ./
 RUN npm run build
 
 # ---------- Giai doan 2: API Node.js ----------
-FROM node:20-alpine
+FROM node:26-alpine
 ENV NODE_ENV=production \
     NPM_CONFIG_UPDATE_NOTIFIER=false
 WORKDIR /app
