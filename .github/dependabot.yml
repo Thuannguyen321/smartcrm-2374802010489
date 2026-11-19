@@ -1,0 +1,29 @@
+# Dependabot: moi tuan mo PR nang phien ban thu vien, GitHub Action (SHA ghim trong ci.yml) va image Docker.
+# Gom PR theo nhom de khong qua nhieu PR; ban major (vd. react-router-dom 7) van tach rieng de test tay.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      backend-minor-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: npm
+    directory: "/client"
+    schedule:
+      interval: weekly
+    groups:
+      client-minor-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: weekly

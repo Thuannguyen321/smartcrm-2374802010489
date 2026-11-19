@@ -1,0 +1,17 @@
+# Cau hinh gitleaks cho job `security` trong .github/workflows/ci.yml
+# Dung bo luat mac dinh cua gitleaks, chi bo qua cac gia tri MAU cong khai (khong phai secret that),
+# xem docs/checklist-bao-mat.md muc 1.
+title = "Smart CRM - gitleaks"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Gia tri mau cho moi truong thu/CI va lock file"
+regexes = [
+  '''smartcrm_dev''',                    # mat khau CSDL mau (docker-compose.yml, .env.example, ci.yml)
+  '''doi-thanh-chuoi-bi-mat-cua-ban''',  # JWT_SECRET mau - ung dung tu choi dung (BUG-06)
+]
+paths = [
+  '''(^|/)package-lock\.json$''',        # chi chua checksum "integrity", khong co secret
+]
